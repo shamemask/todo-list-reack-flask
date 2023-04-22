@@ -14,3 +14,48 @@ class Task(db.Model):
     description = db.Column(db.Text, nullable=False)
     done = db.Column(db.Boolean, default=False, nullable=False)
 
+@app.route('/api/tasks', methods=['GET'])
+def get_tasks():
+    page = request.args.get('page', 1, type=int)
+    per_page = 3
+    order_by = request.args.get('order_by', 'name')
+
+    if order_by == 'name':
+        tasks = Task.query.order_by(Task.name.asc())
+    elif order_by == 'email':
+        tasks = Task.query.order_by(Task.email.asc())
+    elif order_by == 'done':
+        tasks = Task.query.order_by(Task.done.asc())
+    else:
+        tasks = Task.query.order_by(Task.id.asc())
+
+    pagination = tasks.paginate(page=page, per_page=per_page)
+
+    return jsonify({
+        'tasks': [task.to_dict() for task in pagination.items],
+        'total_pages': pagination.total,
+        'current_page': pagination.page,
+        'per_page': per_page,
+        'order_by': order_by
+    })
+
+
+@app.route('/api/tasks', methods=['POST'])
+def create_task():
+    data = request.get_json()
+
+    task = Task(name=data.get('name'), email=data.get('email'), description=data.get('description'))
+    db.session.add(task)
+    db.session.commit()
+
+    return jsonify(task.to_dict())
+
+
+@app.route('/api/tasks/<int:task_id>', methods=['GET'])
+def get_task(task_id):
+    task = Task.query.get(task_id)
+
+    if not task:
+        return jsonify({'error': 'Task not found'}), 404
+
+    return jsonify(task.to_dict())
