@@ -95,3 +95,6 @@ def login():
 def logout():
     session.pop('logged_in', None)
     return jsonify({'success': 'Logged out successfully'})
+
+if __name__ == '__main__':
+    app.run(debug=True)
