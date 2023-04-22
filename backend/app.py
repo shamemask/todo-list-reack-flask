@@ -1,91 +1,91 @@
+import bcrypt
+from datetime import datetime
 from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 from flask_cors import CORS
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgres://user:password@localhost:5432/tasks'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:123@localhost:5432/postgres'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-db = SQLAlchemy(app)
-CORS(app)
+db = SQLAlchemy()
+db.init_app(app)
+migrate = Migrate(app, db)
+
+cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 
-class Task(db.Model):
-    __tablename__ = 'tasks'
+class Todo(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String())
-    email = db.Column(db.String())
-    description = db.Column(db.String())
-    done = db.Column(db.Boolean, default=False)
+    name = db.Column(db.String(120))
+    email = db.Column(db.String(120))
+    text = db.Column(db.String(120))
+    done = db.Column(db.Boolean)
 
-    def __init__(self, name, email, description):
+    def __init__(self, name, email, text, done=False):
         self.name = name
         self.email = email
-        self.description = description
-        self.done = False
+        self.text = text
+        self.done = done
 
-    def as_dict(self):
-        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
-
-
-@app.route('/api/tasks', methods=['GET'])
-def get_tasks():
-    page = int(request.args.get('page', 1))
-    order_by = request.args.get('order_by', 'name')
-    tasks = Task.query.order_by(order_by).paginate(page=page, per_page=10)
-    return jsonify({
-        'tasks': [task.as_dict() for task in tasks.items],
-        'total_pages': tasks.pages,
-        'current_page': tasks.page,
-        'per_page': tasks.per_page,
-        'order_by': order_by,
-    })
+    def serialize(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'email': self.email,
+            'text': self.text,
+            'done': self.done,
+        }
 
 
-@app.route('/api/tasks/<int:id>', methods=['GET'])
-def get_task(id):
-    task = Task.query.get(id)
-    if not task:
-        return jsonify({'error': f'Task with id {id} not found'}), 404
-    return jsonify(task.as_dict())
+# Получить все задачи
+@app.route('/api/todos')
+def get_todos():
+    todos = Todo.query.all()
+    todos = [todo.serialize() for todo in todos]
+    return jsonify(todos)
 
+# Получить задачу по ID
+@app.route('/api/todos/<int:id>')
+def get_todo_by_id(id):
+    todo = Todo.query.get(id)
+    return jsonify(todo.serialize())
 
-@app.route('/api/tasks', methods=['POST'])
-def create_task():
-    data = request.json
-    required_fields = ['name', 'email', 'description']
-    if not all(field in data for field in required_fields):
-        return jsonify({'error': 'Missing required fields'}), 400
-    task = Task(data['name'], data['email'], data['description'])
-    db.session.add(task)
+# Добавить задачу
+@app.route('/api/todos', methods=['POST'])
+def create_todo():
+    name = request.json['name']
+    email = request.json['email']
+    text = request.json['text']
+
+    todo = Todo(name=name, email=email, text=text, done=False)
+    db.session.add(todo)
     db.session.commit()
-    return jsonify(task.as_dict())
 
+    return jsonify(todo.serialize())
 
-@app.route('/api/tasks/<int:id>', methods=['PUT'])
-def update_task(id):
-    task = Task.query.get(id)
-    if not task:
-        return jsonify({'error': f'Task with id {id} not found'}), 404
-    data = request.json
-    if 'name' in data:
-        task.name = data['name']
-    if 'email' in data:
-        task.email = data['email']
-    if 'description' in data:
-        task.description = data['description']
-    if 'done' in data:
-        task.done = data['done']
+# Обновить задачу
+@app.route('/api/todos/<int:id>', methods=['PUT'])
+def update_todo_by_id(id):
+    todo = Todo.query.get(id)
+
+    if 'text' in request.json:
+        todo.text = request.json['text']
+    if 'done' in request.json:
+        todo.done = request.json['done']
+
     db.session.commit()
-    return jsonify(task.as_dict())
 
-@app.route('/api/tasks/int:id', methods=['DELETE'])
-def delete_task(id):
-    task = Task.query.get(id)
-    if not task:
-        return jsonify({'error': f'Task with id {id} not found'}), 404
-    db.session.delete(task)
+    return jsonify(todo.serialize())
+
+# Удалить задачу
+@app.route('/api/todos/<int:id>', methods=['DELETE'])
+def delete_todo_by_id(id):
+    todo = Todo.query.get(id)
+    db.session.delete(todo)
     db.session.commit()
-    return jsonify({'message': f'Task with id {id} deleted successfully'})
+
+    return jsonify(todo.serialize())
 
 if __name__ == 'main':
     app.run(debug=True)
