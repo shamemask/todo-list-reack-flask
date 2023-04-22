@@ -1,100 +1,91 @@
-from flask import Flask, jsonify, request, render_template, session, redirect, url_for, flash
+from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
+from flask_cors import CORS
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:123@localhost/postgres'
-app.config['SECRET_KEY'] = 'secret'
-
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgres://user:password@localhost:5432/tasks'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
+CORS(app)
+
 
 class Task(db.Model):
+    __tablename__ = 'tasks'
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(255), nullable=False)
-    email = db.Column(db.String(255), nullable=False)
-    description = db.Column(db.Text, nullable=False)
-    done = db.Column(db.Boolean, default=False, nullable=False)
+    name = db.Column(db.String())
+    email = db.Column(db.String())
+    description = db.Column(db.String())
+    done = db.Column(db.Boolean, default=False)
+
+    def __init__(self, name, email, description):
+        self.name = name
+        self.email = email
+        self.description = description
+        self.done = False
+
+    def as_dict(self):
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+
 
 @app.route('/api/tasks', methods=['GET'])
 def get_tasks():
-    page = request.args.get('page', 1, type=int)
-    per_page = 3
+    page = int(request.args.get('page', 1))
     order_by = request.args.get('order_by', 'name')
-
-    if order_by == 'name':
-        tasks = Task.query.order_by(Task.name.asc())
-    elif order_by == 'email':
-        tasks = Task.query.order_by(Task.email.asc())
-    elif order_by == 'done':
-        tasks = Task.query.order_by(Task.done.asc())
-    else:
-        tasks = Task.query.order_by(Task.id.asc())
-
-    pagination = tasks.paginate(page=page, per_page=per_page)
-
+    tasks = Task.query.order_by(order_by).paginate(page=page, per_page=10)
     return jsonify({
-        'tasks': [task.to_dict() for task in pagination.items],
-        'total_pages': pagination.total,
-        'current_page': pagination.page,
-        'per_page': per_page,
-        'order_by': order_by
+        'tasks': [task.as_dict() for task in tasks.items],
+        'total_pages': tasks.pages,
+        'current_page': tasks.page,
+        'per_page': tasks.per_page,
+        'order_by': order_by,
     })
+
+
+@app.route('/api/tasks/<int:id>', methods=['GET'])
+def get_task(id):
+    task = Task.query.get(id)
+    if not task:
+        return jsonify({'error': f'Task with id {id} not found'}), 404
+    return jsonify(task.as_dict())
 
 
 @app.route('/api/tasks', methods=['POST'])
 def create_task():
-    data = request.get_json()
-
-    task = Task(name=data.get('name'), email=data.get('email'), description=data.get('description'))
+    data = request.json
+    required_fields = ['name', 'email', 'description']
+    if not all(field in data for field in required_fields):
+        return jsonify({'error': 'Missing required fields'}), 400
+    task = Task(data['name'], data['email'], data['description'])
     db.session.add(task)
     db.session.commit()
+    return jsonify(task.as_dict())
 
-    return jsonify(task.to_dict())
 
-
-@app.route('/api/tasks/<int:task_id>', methods=['GET'])
-def get_task(task_id):
-    task = Task.query.get(task_id)
-
+@app.route('/api/tasks/<int:id>', methods=['PUT'])
+def update_task(id):
+    task = Task.query.get(id)
     if not task:
-        return jsonify({'error': 'Task not found'}), 404
-
-    return jsonify(task.to_dict())
-
-@app.route('/api/tasks/<int:task_id>', methods=['PUT'])
-def update_task(task_id):
-    task = Task.query.get(task_id)
-
-    if not task:
-        return jsonify({'error': 'Task not found'}), 404
-
-    data = request.get_json()
-
-    task.description = data.get('description', task.description)
-    task.done = data.get('done', task.done)
-
-    db.session.add(task)
+        return jsonify({'error': f'Task with id {id} not found'}), 404
+    data = request.json
+    if 'name' in data:
+        task.name = data['name']
+    if 'email' in data:
+        task.email = data['email']
+    if 'description' in data:
+        task.description = data['description']
+    if 'done' in data:
+        task.done = data['done']
     db.session.commit()
+    return jsonify(task.as_dict())
 
-    return jsonify(task.to_dict())
+@app.route('/api/tasks/int:id', methods=['DELETE'])
+def delete_task(id):
+    task = Task.query.get(id)
+    if not task:
+        return jsonify({'error': f'Task with id {id} not found'}), 404
+    db.session.delete(task)
+    db.session.commit()
+    return jsonify({'message': f'Task with id {id} deleted successfully'})
 
-
-@app.route('/api/login', methods=['POST'])
-def login():
-    data = request.get_json()
-    username = data.get('username')
-    password = data.get('password')
-
-    if username == 'admin' and password == '123':
-        session['logged_in'] = True
-        return jsonify({'success': 'Logged in successfully'})
-
-    return jsonify({'error': 'Invalid credentials'}), 401
-
-
-@app.route('/api/logout')
-def logout():
-    session.pop('logged_in', None)
-    return jsonify({'success': 'Logged out successfully'})
-
-if __name__ == '__main__':
+if __name__ == 'main':
     app.run(debug=True)
