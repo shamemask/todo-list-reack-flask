@@ -59,3 +59,39 @@ def get_task(task_id):
         return jsonify({'error': 'Task not found'}), 404
 
     return jsonify(task.to_dict())
+
+@app.route('/api/tasks/<int:task_id>', methods=['PUT'])
+def update_task(task_id):
+    task = Task.query.get(task_id)
+
+    if not task:
+        return jsonify({'error': 'Task not found'}), 404
+
+    data = request.get_json()
+
+    task.description = data.get('description', task.description)
+    task.done = data.get('done', task.done)
+
+    db.session.add(task)
+    db.session.commit()
+
+    return jsonify(task.to_dict())
+
+
+@app.route('/api/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+
+    if username == 'admin' and password == '123':
+        session['logged_in'] = True
+        return jsonify({'success': 'Logged in successfully'})
+
+    return jsonify({'error': 'Invalid credentials'}), 401
+
+
+@app.route('/api/logout')
+def logout():
+    session.pop('logged_in', None)
+    return jsonify({'success': 'Logged out successfully'})
