@@ -1,0 +1,487 @@
+file backend\app.py
+'''
+import bcrypt
+from datetime import datetime
+from flask import Flask, jsonify, request
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
+from flask_cors import CORS
+
+app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:123@db:5432/postgres'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db = SQLAlchemy()
+db.init_app(app)
+migrate = Migrate(app, db)
+
+cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
+
+
+class Todo(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(120))
+    email = db.Column(db.String(120))
+    text = db.Column(db.String(120))
+    done = db.Column(db.Boolean)
+
+    def __init__(self, name, email, text, done=False):
+        self.name = name
+        self.email = email
+        self.text = text
+        self.done = done
+
+    def serialize(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'email': self.email,
+            'text': self.text,
+            'done': self.done,
+        }
+
+
+@app.route('/api/todos')
+def get_todos():
+    todos = Todo.query.all()
+    todos = [todo.serialize() for todo in todos]
+    return jsonify(todos)
+
+@app.route('/api/todos/<int:id>')
+def get_todo_by_id(id):
+    todo = Todo.query.get(id)
+    return jsonify(todo.serialize())
+
+@app.route('/api/todos', methods=['POST'])
+def create_todo():
+    name = request.json['name']
+    email = request.json['email']
+    text = request.json['text']
+
+    todo = Todo(name=name, email=email, text=text, done=False)
+    db.session.add(todo)
+    db.session.commit()
+
+    return jsonify(todo.serialize())
+
+@app.route('/api/todos/<int:id>', methods=['PUT'])
+def update_todo_by_id(id):
+    todo = Todo.query.get(id)
+
+    if 'text' in request.json:
+        todo.text = request.json['text']
+    if 'done' in request.json:
+        todo.done = request.json['done']
+
+    db.session.commit()
+
+    return jsonify(todo.serialize())
+
+@app.route('/api/todos/<int:id>', methods=['DELETE'])
+def delete_todo_by_id(id):
+    todo = Todo.query.get(id)
+    db.session.delete(todo)
+    db.session.commit()
+
+    return jsonify(todo.serialize())
+
+if __name__ == 'main':
+    app.run(debug=True)
+'''
+
+file backend\Dockerfile
+'''
+# Базовый образ
+FROM python:3.9
+
+# Создание директории приложения
+WORKDIR /app
+
+# Копирование файлов проекта в контейнер
+COPY . .
+
+# Обновление pip
+RUN python -m pip install --upgrade pip
+
+# Установка зависимостей
+RUN pip install -r requirements.txt
+
+# Открытие порта для взаимодействия с клиентским приложением
+EXPOSE 5000
+
+# Настройка команды запуска приложения в контейнере
+CMD ["flask", "run"]
+'''
+
+file frontend\Dockerfile
+'''
+# Базовый образ
+FROM node:18
+
+# Создание директории приложения
+WORKDIR /app
+ENV PATH /app/node_modules/.bin:$PATH
+# Копирование файлов проекта в контейнер
+COPY package.json package-lock.json ./
+COPY ./src ./src
+COPY ./public ./public
+
+# Установка зависимостей
+RUN npm install
+
+RUN npm install react-scripts@^5.0.1 -g
+# Открытие порта для доступа к приложению
+RUN npm run build
+EXPOSE 3000
+
+# Настройка команды запуска приложения в контейнере
+CMD ["npm", "start"]
+
+
+'''
+
+file frontend\src\App.test.js
+'''
+import { render, screen } from '@testing-library/react';
+import App from './App';
+
+test('renders learn react link', () => {
+  render(<App />);
+  const linkElement = screen.getByText(/learn react/i);
+  expect(linkElement).toBeInTheDocument();
+});
+
+'''
+
+file frontend\src\index.js
+'''
+import React from 'react';
+import ReactDOM from 'react-dom';
+import { Provider } from 'react-redux';
+import configureStore from './store/configureStore';
+import App from './components/App';
+
+const store = configureStore();
+
+ReactDOM.render(
+  <Provider store={store}>
+    <App />
+  </Provider>,
+  document.getElementById('root')
+);
+'''
+
+file frontend\src\reportWebVitals.js
+'''
+const reportWebVitals = onPerfEntry => {
+  if (onPerfEntry && onPerfEntry instanceof Function) {
+    import('web-vitals').then(({ getCLS, getFID, getFCP, getLCP, getTTFB }) => {
+      getCLS(onPerfEntry);
+      getFID(onPerfEntry);
+      getFCP(onPerfEntry);
+      getLCP(onPerfEntry);
+      getTTFB(onPerfEntry);
+    });
+  }
+};
+
+export default reportWebVitals;
+
+'''
+
+file frontend\src\setupProxy.js
+'''
+const { createProxyMiddleware } = require('http-proxy-middleware');
+
+module.exports = function(app) {
+  app.use(
+    '/api',
+    createProxyMiddleware({
+      target: 'http://flask:5000',
+      changeOrigin: true
+    })
+  );
+};
+'''
+
+file frontend\src\setupTests.js
+'''
+// jest-dom adds custom jest matchers for asserting on DOM nodes.
+// allows you to do things like:
+// expect(element).toHaveTextContent(/react/i)
+// learn more: https://github.com/testing-library/jest-dom
+import '@testing-library/jest-dom';
+
+'''
+
+file frontend\src\actions\todosActions.js
+'''
+import axios from 'axios';
+import {
+  FETCH_TODOS,
+  FETCH_TODO_BY_ID,
+  UPDATE_TODO,
+  CREATE_TODO
+} from './types';
+
+export const fetchTodos = () => async dispatch => {
+  const res = await axios.get('/api/todos');
+  dispatch({
+    type: FETCH_TODOS,
+    payload: res.data
+  });
+};
+
+export const fetchTodoById = id => async dispatch => {
+  const res = await axios.get(`/api/todos/${id}`);
+  dispatch({
+    type: FETCH_TODO_BY_ID,
+    payload: res.data
+  });
+};
+
+export const updateTodo = (id, text, done) => async dispatch => {
+  await axios.put(`/api/todos/${id}`, { text, done });
+  dispatch({
+    type: UPDATE_TODO
+  });
+};
+
+export const createTodo = (name, email, text) => dispatch => {
+  return axios.post('/api/todos', { name, email, text })
+    .then(res => {
+      dispatch({ type: CREATE_TODO, payload: res.data });
+    })
+    .catch(err => console.log(err));
+};
+'''
+
+file frontend\src\actions\types.js
+'''
+export const FETCH_TODOS = 'FETCH_TODOS';
+export const FETCH_TODO_BY_ID = 'FETCH_TODO_BY_ID';
+export const UPDATE_TODO = 'UPDATE_TODO';
+export const CREATE_TODO = 'CREATE_TODO';
+
+'''
+
+file frontend\src\components\App.js
+'''
+import React from 'react';
+import { BrowserRouter as Router, Route, Switch } from 'react-router-dom';
+import TodoList from './TodoList';
+import TodoForm from './TodoForm';
+import TodoDetails from './TodoDetails';
+
+const App = () => (
+  <Router>
+    <Switch>
+      <Route exact path="/" component={TodoList} />
+      <Route path="/todos/:id" component={TodoDetails} />
+      <Route exact path="/create-todo" component={TodoForm} />
+    </Switch>
+  </Router>
+);
+
+export default App;
+'''
+
+file frontend\src\components\TodoDetails.js
+'''
+import React, { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchTodoById, updateTodo } from '../actions/todosActions';
+
+const TodoDetails = ({ match }) => {
+  const { id } = match.params;
+  const dispatch = useDispatch();
+  const todo = useSelector(state => state.todo);
+  const [text, setText] = useState('');
+  const [done, setDone] = useState(false);
+
+  useEffect(() => {
+    dispatch(fetchTodoById(id));
+  }, [dispatch, id]);
+
+  useEffect(() => {
+    setText(todo.text);
+    setDone(todo.done);
+  }, [todo]);
+
+  const handleSubmit = e => {
+    e.preventDefault();
+    dispatch(updateTodo(todo.id, text, done));
+  };
+
+  return (
+    <div>
+      <h2>Task Details:</h2>
+      <form onSubmit={handleSubmit}>
+        <h3>{todo.name}</h3>
+        <p>{todo.email}</p>
+        <input
+          type="text"
+          value={text}
+          onChange={e => setText(e.target.value)}
+        />
+        <label>
+          Done?
+          <input
+            type="checkbox"
+            checked={done}
+            onChange={e => setDone(e.target.checked)}
+          />
+        </label>
+        <button type="submit">Save</button>
+      </form>
+    </div>
+  );
+};
+
+export default TodoDetails;
+'''
+
+file frontend\src\components\TodoForm.js
+'''
+import React, { useState } from 'react';
+import { connect } from 'react-redux';
+import { createTodo } from '../actions/todosActions';
+
+const TodoForm = ({ createTodo }) => {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [text, setText] = useState('');
+
+  const onSubmit = e => {
+    e.preventDefault();
+    createTodo(name, email, text);
+    setName('');
+    setEmail('');
+    setText('');
+  };
+
+  return (
+    <form onSubmit={onSubmit}>
+      <div>
+        <label htmlFor="name">Name</label>
+        <input type="text" id="name" value={name} onChange={e => setName(e.target.value)} required />
+      </div>
+      <div>
+        <label htmlFor="email">Email</label>
+        <input type="email" id="email" value={email} onChange={e => setEmail(e.target.value)} required />
+      </div>
+      <div>
+        <label htmlFor="text">Text</label>
+        <input type="text" id="text" value={text} onChange={e => setText(e.target.value)} required />
+      </div>
+      <button type="submit">Add Todo</button>
+    </form>
+  );
+};
+
+export default connect(null, { createTodo })(TodoForm);
+'''
+
+file frontend\src\components\TodoList.js
+'''
+import React, { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchTodos } from '../actions/todosActions';
+import { Link } from 'react-router-dom';
+
+const TodoList = () => {
+  const dispatch = useDispatch();
+  const todos = useSelector(state => state.todos);
+
+  useEffect(() => {
+    dispatch(fetchTodos());
+  }, [dispatch]);
+
+  return (
+    <div>
+        <h2>Todo List</h2>
+        <Link to="/create-todo">Create Todo</Link>
+        {todos.length === 0 ? <p>No todos found.</p> : (
+          <ul>
+            {todos.map(todo => (
+              <li key={todo.id}>
+                <Link to={`/todos/${todo.id}`}>
+                  {todo.text} {todo.done ? '(done)' : ''}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+  );
+};
+
+export default TodoList;
+'''
+
+file frontend\src\components\TodoListItem.js
+'''
+import React from 'react';
+import { Link } from 'react-router-dom';
+
+const TodoListItem = ({ todo }) => (
+  <div>
+    <h3>{todo.name}</h3>
+    <p>{todo.email}</p>
+    <p>{todo.text}</p>
+    <p>Completed: {todo.done ? 'Yes' : 'No'}</p>
+    <Link to={`/todos/${todo.id}`}>Details</Link>
+  </div>
+);
+
+export default TodoListItem;
+'''
+
+file frontend\src\reducers\todosReducer.js
+'''
+import {
+  FETCH_TODOS,
+  FETCH_TODO_BY_ID,
+  UPDATE_TODO
+} from '../actions/types';
+
+const initialState = {
+  todos: [],
+  todo: {}
+};
+
+const todosReducer = (state = initialState, action) => {
+  switch (action.type) {
+    case FETCH_TODOS:
+      return {
+        ...state,
+        todos: action.payload
+      };
+    case FETCH_TODO_BY_ID:
+      return {
+        ...state,
+        todo: action.payload
+      };
+    case UPDATE_TODO:
+      return state;
+    default:
+      return state;
+  }
+};
+
+export default todosReducer;
+'''
+
+file frontend\src\store\configureStore.js
+'''
+import { createStore, applyMiddleware } from 'redux';
+import thunk from 'redux-thunk';
+import todosReducer from '../reducers/todosReducer';
+
+const configureStore = () => {
+  const store = createStore(todosReducer, applyMiddleware(thunk));
+  return store;
+};
+
+export default configureStore;
+'''
+

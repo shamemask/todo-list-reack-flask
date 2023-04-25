@@ -1,41 +1,11 @@
-import bcrypt
+import eventlet
+eventlet.monkey_patch()
+
+from app import app, db
 from datetime import datetime
-from flask import Flask, jsonify, request
-from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
-from flask_cors import CORS
+import bcrypt
 
-app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:123@db:5432/postgres'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-db = SQLAlchemy()
-db.init_app(app)
-migrate = Migrate(app, db)
-
-cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
-
-
-class Todo(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(120))
-    email = db.Column(db.String(120))
-    text = db.Column(db.String(120))
-    done = db.Column(db.Boolean)
-
-    def __init__(self, name, email, text, done=False):
-        self.name = name
-        self.email = email
-        self.text = text
-        self.done = done
-
-    def serialize(self):
-        return {
-            'id': self.id,
-            'name': self.name,
-            'email': self.email,
-            'text': self.text,
-            'done': self.done,
-        }
+from app.models.todo import Todo
 
 
 # Получить все задачи
