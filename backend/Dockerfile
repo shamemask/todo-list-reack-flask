@@ -24,7 +24,6 @@ RUN service postgresql start &&\
 
 
 # Копируем файлы WSGI и Gunicorn в контейнер
-COPY instance/config.py /instance/config.py
 COPY app app
 COPY wsgi.py wsgi.py
 
