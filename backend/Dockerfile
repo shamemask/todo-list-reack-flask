@@ -7,6 +7,9 @@ WORKDIR /app
 # Копирование файлов проекта в контейнер
 COPY . .
 
+# Обновление pip
+RUN python -m pip install --upgrade pip
+
 # Установка зависимостей
 RUN pip install -r requirements.txt
 
@@ -14,4 +17,5 @@ RUN pip install -r requirements.txt
 EXPOSE 5000
 
 # Настройка команды запуска приложения в контейнере
-CMD ["flask", "db", "upgrade", "&&", "flask", "run"]
+
+CMD ["flask", "run"]
