@@ -2,7 +2,7 @@
 FROM python:3.9
 
 # Установим зависимости
-RUN apt-get update -y && apt-get install -y postgresql postgresql-contrib libpq-dev
+RUN apt-get update -y && apt-get install -y postgresql postgresql-contrib libpq-dev nginx
 
 # Создаем директорию приложения и перемещаемся в нее 
 WORKDIR /app
@@ -22,12 +22,12 @@ RUN service postgresql start &&\
     python manage.py db upgrade && \
     python manage.py seed_db
 
+# Копируем файлы конфигурации Nginx и WSGI в контейнер
+COPY nginx.conf /etc/nginx/sites-available/default
+COPY wsgi.py /app
 
-# Копируем файлы WSGI и Gunicorn в контейнер
-# COPY wsgi.py wsgi.py
+# Открываем порт 80 для Nginx
+EXPOSE 80
 
-# Открываем порт 5000 для приложения
-EXPOSE 5000
-
-# Запускаем приложение с WSGI
-CMD ["python", "wsgi.py"]
+# Запускаем Nginx и Gunicorn
+CMD service nginx start && gunicorn --bind 0.0.0.0:5000 wsgi:app
