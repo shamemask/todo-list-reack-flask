@@ -17,15 +17,14 @@ RUN python -m pip install --upgrade pip && pip install -r requirements.txt
 RUN service postgresql start &&\
     su - postgres -c "psql -tAc \"SELECT 1 FROM pg_roles WHERE rolname='postgres'\" | grep -q 1 || createuser --superuser postgres && echo \"ALTER USER postgres PASSWORD '123';\" | psql" &&\
     su - postgres -c "psql -lqt | cut -d \| -f 1 | grep -wq postgres || createdb postgres" &&\
-    python app\__init__.py db init && \
-    python app\__init__.py db migrate && \
-    python app\__init__.py db upgrade && \
-    python app\__init__.py seed_db
+    python manage.py db init && \
+    python manage.py db migrate && \
+    python manage.py db upgrade && \
+    python manage.py seed_db
 
 
 # Копируем файлы WSGI и Gunicorn в контейнер
-COPY app app
-COPY wsgi.py wsgi.py
+# COPY wsgi.py wsgi.py
 
 # Открываем порт 5000 для приложения
 EXPOSE 5000
