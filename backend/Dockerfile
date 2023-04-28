@@ -15,12 +15,13 @@ RUN python -m pip install --upgrade pip && pip install -r requirements.txt
    
 # Запускаем PostgreSQL и создаем базу данных, пользователя и миграции
 RUN service postgresql start && sleep 5 && \
-    su - postgres -c "psql -c 'CREATE DATABASE postgres'" && \
-    su - postgres -c "psql -c 'CREATE USER postgres WITH PASSWORD '\''123'\'''" && \
-    su - postgres -c "psql -c \"GRANT ALL PRIVILEGES ON DATABASE postgres TO postgres \"" && \
-    su - postgres -c "flask db init && \
+    # su - postgres -c "psql -c 'CREATE DATABASE postgres'" && \
+    # su - postgres -c "psql -c 'CREATE USER postgres WITH PASSWORD '\''123'\'''" && \
+    # su - postgres -c "psql -c \"GRANT ALL PRIVILEGES ON DATABASE postgres TO postgres \"" && \
+    su - postgres -c "psql -c 'ALTER USER postgres WITH PASSWORD '\''123'\'''" && \
+    flask db init && \
     flask db migrate && \
-    flask db upgrade"
+    flask db upgrade
 
 # Открываем порт 80 для Nginx
 EXPOSE 80
