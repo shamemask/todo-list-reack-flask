@@ -25,7 +25,7 @@ RUN service postgresql start && sleep 5 && \
 
 
 # Открываем порт 5000 для Nginx
-EXPOSE 5000:5000
+EXPOSE 5000
 
 # Запускаем Nginx и Gunicorn
 CMD service postgresql start && service nginx start && gunicorn --bind 0.0.0.0:5000 wsgi:app
