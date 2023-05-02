@@ -1,19 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchTodoById, updateTodo } from '../actions/todosActions';
+import AdminPanel from './AdminPanel';
+import AdminTodoForm from './AdminTodoForm';
 
 const TodoDetails = ({ match }) => {
   const { id } = match.params;
   const dispatch = useDispatch();
-  const todo = useSelector(state => state.todo);
-  const [text, setText] = useState('');
-  const [done, setDone] = useState(false);
-
+  const todo = useSelector(state => state.todos.todo);
+  const isAdmin = useSelector(state => state.todos.isAdmin);
+  const [text, setText] = useState(todo.text);
+  const [done, setDone] = useState(todo.done);
+ 
   useEffect(() => {
     dispatch(fetchTodoById(id));
   }, [dispatch, id]);
 
-  useEffect(() => {
+  useEffect(() =>{
     setText(todo.text);
     setDone(todo.done);
   }, [todo]);
@@ -26,24 +29,36 @@ const TodoDetails = ({ match }) => {
   return (
     <div>
       <h2>Task Details:</h2>
-      <form onSubmit={handleSubmit}>
-        <h3>{todo.name}</h3>
-        <p>{todo.email}</p>
-        <input
-          type="text"
-          value={text}
-          onChange={e => setText(e.target.value)}
-        />
-        <label>
-          Done?
+        <form onSubmit={handleSubmit} className="todo-details">
+          <h3>{todo.name}</h3>
+          <p>{todo.email}</p>
           <input
-            type="checkbox"
-            checked={done}
-            onChange={e => setDone(e.target.checked)}
+            type="text"
+            value={text}
+            onChange={e => setText(e.target.value)}
+            className="todo-input"
           />
-        </label>
-        <button type="submit">Save</button>
-      </form>
+          <label>
+            Done?
+            <input
+              type="checkbox"
+              checked={done}
+              onChange={e => setDone(e.target.checked)}
+              className="todo-checkbox"
+            />
+          </label>
+          <button type="submit" className="btn-primary">Save</button>
+        </form>
+        {isAdmin ? (
+            <AdminTodoForm class="admin-todo-form" todo={todo} />
+          ) : (
+            <div>
+              <h3>{todo.name}</h3>
+              <p>{todo.email}</p>
+              <p>{todo.text}</p>
+              <p>{todo.done ? 'Done' : 'Not Done'}</p>
+            </div>
+          )}
     </div>
   );
 };

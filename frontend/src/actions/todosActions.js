@@ -6,14 +6,18 @@ import {
   CREATE_TODO
 } from './types';
 
-export const fetchTodos = () => async dispatch => {
-  const res = await axios.get('/api/todos');
-  dispatch({
-    type: FETCH_TODOS,
-    payload: res.data
-  });
+export const fetchTodos = (page = 1, sortField = 'id', sortOrder = 'asc') => async dispatch => {
+  try {
+    const res = await axios.get(`/api/todos?_page=${page}&_limit=3&_sort=${sortField}&_order=${sortOrder}`);
+    const totalCount = res.headers['x-total-count'] ? res.headers['x-total-count'] : 0;
+    dispatch({
+      type: FETCH_TODOS,
+      payload: { data: res.data, page, totalCount }
+    });
+  } catch (err) {
+    console.log(err);
+  }
 };
-
 export const fetchTodoById = id => async dispatch => {
   const res = await axios.get(`/api/todos/${id}`);
   dispatch({
@@ -23,7 +27,7 @@ export const fetchTodoById = id => async dispatch => {
 };
 
 export const updateTodo = (id, text, done) => async dispatch => {
-  await axios.put(`/api/todos/${id}`, { text, done });
+  await axios.patch(`/api/todos/${id}`, { text, done });
   dispatch({
     type: UPDATE_TODO
   });
@@ -35,4 +39,16 @@ export const createTodo = (name, email, text) => dispatch => {
       dispatch({ type: CREATE_TODO, payload: res.data });
     })
     .catch(err => console.log(err));
+};
+
+export const login = (username, password) => dispatch => {
+  if (username === 'admin' && password === '123') {
+    dispatch({ type: LOGIN_SUCCESS });
+  } else {
+    dispatch({ type: LOGIN_FAIL });
+  }
+};
+
+export const logout = () => dispatch => {
+  dispatch({ type: LOGOUT });
 };

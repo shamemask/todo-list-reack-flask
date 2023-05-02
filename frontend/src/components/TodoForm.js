@@ -16,21 +16,23 @@ const TodoForm = ({ createTodo }) => {
   };
 
   return (
-    <form onSubmit={onSubmit}>
-      <div>
-        <label htmlFor="name">Name</label>
-        <input type="text" id="name" value={name} onChange={e => setName(e.target.value)} required />
-      </div>
-      <div>
-        <label htmlFor="email">Email</label>
-        <input type="email" id="email" value={email} onChange={e => setEmail(e.target.value)} required />
-      </div>
-      <div>
-        <label htmlFor="text">Text</label>
-        <input type="text" id="text" value={text} onChange={e => setText(e.target.value)} required />
-      </div>
-      <button type="submit">Add Todo</button>
-    </form>
+    <div className='container'>
+      <form onSubmit={onSubmit} className="todo-form">
+        <div>
+          <label htmlFor="name">Name</label>
+          <input className="todo-input" type="text" id="name" value={name} onChange={e => setName(e.target.value)} required />
+        </div>
+        <div>
+          <label htmlFor="email">Email</label>
+          <input className='todo-input' type="email" id="email" value={email} onChange={e => setEmail(e.target.value)} required />
+        </div>
+        <div>
+          <label htmlFor="text">Text</label>
+          <input className='todo-input' type="text" id="text" value={text} onChange={e => setText(e.target.value)} required />
+        </div>
+        <button className='btn-primary' type="submit">Add Todo</button>
+      </form>
+    </div>
   );
 };
 

@@ -1,13 +1,176 @@
 body {
+  font-family: Arial, Helvetica, sans-serif;
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  padding: 0;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+th,
+td {
+  padding: 12px 15px;
+  text-align: left;
+  border: 1px solid #ddd;
+}
+
+th {
+  background-color: #f2f2f2;
+  cursor: pointer;
+}
+
+tr:hover {
+  background-color: #f5f5f5;
+}
+
+tr:nth-child(even) {
+  background-color: #f2f2f2;
+}
+
+.paginate {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.paginate span {
+  margin: 5px;
+  cursor: pointer;
+}
+
+.todo-form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.todo-form label {
+  margin-top: 10px;
+}
+
+.todo-form input {
+  margin-top: 5px;
+  padding: 5px;
+  border-radius: 5px;
+  border: 1px solid #ddd;
+}
+
+.todo-form button {
+  margin-top: 15px;
+  padding: 8px;
+  font-size: 16px;
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.todo-details {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.todo-details h3,
+.todo-details p {
+  margin: 5px;
+}
+
+.todo-details input[type='text'] {
+  margin: 10px 0;
+  padding: 5px;
+  width: 100%;
+  border-radius: 5px;
+  border: 1px solid #ddd;
+}
+
+.todo-details label {
+  margin-left: 10px;
+}
+
+.todo-details button[type='submit'] {
+  margin: 20px auto;
+  padding: 8px;
+  font-size: 16px;
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.admin-panel {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.admin-panel form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.admin-panel label {
+  margin-bottom: 10px;
+}
+
+.admin-panel input {
+  margin-bottom: 15px;
+  padding: 5px;
+  border-radius: 5px;
+  border: 1px solid #ddd;
+}
+
+.admin-panel button {
+  padding: 8px;
+  font-size: 16px;
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  align-self: flex-end;
+}
+
+.admin-todo-form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.admin-todo-form h2,
+.admin-todo-form p {
+  margin: 5px;
+}
+
+.admin-todo-form input[type='text'] {
+  margin: 10px 0;
+  padding: 5px;
+  width: 100%;
+  border-radius: 5px;
+  border: 1px solid #ddd;
+}
+
+.admin-todo-form label {
+  margin-left: 10px;
+}
+
+.admin-todo-form button[type='submit'] {
+  margin: 20px auto;
+  padding: 8px;
+  font-size: 16px;
 }

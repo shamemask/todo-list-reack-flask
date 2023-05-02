@@ -8,8 +8,8 @@ const App = () => (
   <Router>
     <Switch>
       <Route exact path="/" component={TodoList} />
-      <Route path="/todos/:id" component={TodoDetails} />
       <Route exact path="/create-todo" component={TodoForm} />
+      <Route path="/todos/:id" component={TodoDetails} />
     </Switch>
   </Router>
 );

@@ -1,32 +1,107 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchTodos } from '../actions/todosActions';
 import { Link } from 'react-router-dom';
+import TodoListItem from './TodoListItem';
+import AdminPanel from './AdminPanel';
 
 const TodoList = () => {
   const dispatch = useDispatch();
-  const todos = useSelector(state => state.todos);
+  const todos = useSelector(state => state.todos.todos);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [todosPerPage, setTodosPerPage] = useState(3);
+  const [nameSort, setNameSort] = useState(false);
+  const [emailSort, setEmailSort] = useState(false);
+  const [statusSort, setStatusSort] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    dispatch(fetchTodos());
-  }, [dispatch]);
+    dispatch(fetchTodos(currentPage, nameSort ? 'name' : 'id', nameSort ? 'asc' : 'desc'));
+  }, [dispatch, currentPage, nameSort]);
+
+  const indexOfLastTodo = currentPage * todosPerPage;
+  const indexOfFirstTodo = indexOfLastTodo - todosPerPage;
+  const currentTodos = todos.slice(indexOfFirstTodo, indexOfLastTodo);
+
+  const totalPages = Math.ceil(todos.length / todosPerPage);
+  const pageNumbers = [];
+  for (let i = 1; i <= totalPages; i++) {
+    pageNumbers.push(i);
+  }
+
+  const handlePageClick = e => {
+    setCurrentPage(Number(e.target.id));
+  };
+
+  const handleNameSort = () => {
+    setNameSort(!nameSort);
+    setEmailSort(false);
+    setStatusSort(false);
+    setCurrentPage(1);
+  };
+
+  const handleEmailSort = () => {
+    setEmailSort(!emailSort);
+    setNameSort(false);
+    setStatusSort(false);
+    setCurrentPage(1);
+  };
+
+  const handleStatusSort = () => {
+    setStatusSort(!statusSort);
+    setNameSort(false);
+    setEmailSort(false);
+    setCurrentPage(1);
+  };
+
+  const handleLogin = (username, password) => {
+    if (username === 'admin' && password === '123') {
+      setIsAdmin(true);
+    }
+  };
+
+  const handleLogout = () => {
+    setIsAdmin(false);
+  };
 
   return (
-    <div>
-        <h2>Todo List</h2>
-        <Link to="/create-todo">Create Todo</Link>
-        {todos.length === 0 ? <p>No todos found.</p> : (
-          <ul>
-            {todos.map(todo => (
-              <li key={todo.id}>
-                <Link to={`/todos/${todo.id}`}>
-                  {todo.text} {todo.done ? '(done)' : ''}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
+    <div className='container'>
+      <h2>Todo List</h2>
+      <AdminPanel class="admin-todo-form" onLogin={handleLogin} onLogout={handleLogout} isAdmin={isAdmin} />
+      <Link className="btn-primary" to="/create-todo">Create Todo</Link>
+      <table>
+        <thead>
+          <tr>
+            <th className='sort-name' onClick={handleNameSort}>Name</th>
+            <th className='sort-email' onClick={handleEmailSort}>Email</th>
+            <th>Description</th>
+            <th className='sort-status' onClick={handleStatusSort}>Status</th>
+            {isAdmin && <th className="edit-column">Edit</th>}
+          </tr>
+        </thead>
+        <tbody>
+          {currentTodos.map(todo => (
+            <tr key={todo.id}>
+              <td>{todo.name}</td>
+              <td>{todo.email}</td>
+              <td><Link to={`/todos/${todo.id}`}>{todo.text}</Link></td>
+              <td>{todo.done ? 'Done' : 'Not Done'}</td>
+              {isAdmin && (
+                <>
+                  <td className="edit-column"><Link to={`/todos/${todo.id}`}>Edit</Link></td>
+                  <AdminTodoForm class="admin-todo-form" todo={todo} />
+                </>
+              )}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div className='paginate'>
+        {pageNumbers.map(number => (
+          <span key={number} id={number} onClick={handlePageClick}>{number}</span>
+        ))}
       </div>
+    </div>
   );
 };
 

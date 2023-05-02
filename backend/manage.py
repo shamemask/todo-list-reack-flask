@@ -39,9 +39,16 @@ class Todo(db.Model):
 # Получить все задачи
 @app.route('/api/todos')
 def get_todos():
-    todos = Todo.query.all()
-    todos = [todo.serialize() for todo in todos]
-    return jsonify(todos)
+    page = int(request.args.get('_page', 1))
+    limit = int(request.args.get('_limit', 3))
+    sortField = request.args.get('_sort', 'id')
+    sortOrder = request.args.get('_order', 'asc')
+    todos_query = Todo.query.order_by(db.text(f'{sortField} {sortOrder}')).paginate(page, limit, False)
+    totalCount = todos_query.total
+    todos = [todo.serialize() for todo in todos_query.items]
+    response = jsonify(todos)
+    response.headers.add('X-Total-Count', totalCount)
+    return response
 
 # Получить задачу по ID
 @app.route('/api/todos/<int:id>')
