@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchTodoById, updateTodo } from '../actions/todosActions';
-import AdminPanel from './AdminPanel';
 import AdminTodoForm from './AdminTodoForm';
+import { useHistory } from 'react-router-dom';
 
 const TodoDetails = ({ match }) => {
   const { id } = match.params;
   const dispatch = useDispatch();
   const todo = useSelector(state => state.todos.todo);
   const isAdmin = useSelector(state => state.todos.isAdmin);
-  const [text, setText] = useState(todo.text);
-  const [done, setDone] = useState(todo.done);
- 
+  const [text, setText] = useState(todo.text || "");
+  const [done, setDone] = useState(todo.done || false);
+  const history = useHistory();
+
   useEffect(() => {
     dispatch(fetchTodoById(id));
   }, [dispatch, id]);
@@ -24,10 +25,11 @@ const TodoDetails = ({ match }) => {
   const handleSubmit = e => {
     e.preventDefault();
     dispatch(updateTodo(todo.id, text, done));
+    history.push('/');
   };
 
   return (
-    <div>
+    <div className='container'>
       <h2>Task Details:</h2>
         <form onSubmit={handleSubmit} className="todo-details">
           <h3>{todo.name}</h3>

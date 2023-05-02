@@ -2,14 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchTodos } from '../actions/todosActions';
 import { Link } from 'react-router-dom';
-import TodoListItem from './TodoListItem';
 import AdminPanel from './AdminPanel';
+import AdminTodoForm from './AdminTodoForm';
 
 const TodoList = () => {
   const dispatch = useDispatch();
   const todos = useSelector(state => state.todos.todos);
   const [currentPage, setCurrentPage] = useState(1);
-  const [todosPerPage, setTodosPerPage] = useState(3);
   const [nameSort, setNameSort] = useState(false);
   const [emailSort, setEmailSort] = useState(false);
   const [statusSort, setStatusSort] = useState(false);
@@ -19,11 +18,9 @@ const TodoList = () => {
     dispatch(fetchTodos(currentPage, nameSort ? 'name' : 'id', nameSort ? 'asc' : 'desc'));
   }, [dispatch, currentPage, nameSort]);
 
-  const indexOfLastTodo = currentPage * todosPerPage;
-  const indexOfFirstTodo = indexOfLastTodo - todosPerPage;
-  const currentTodos = todos.slice(indexOfFirstTodo, indexOfLastTodo);
+  const currentTodos = todos
 
-  const totalPages = Math.ceil(todos.length / todosPerPage);
+  const totalPages = Math.ceil(todos.length);
   const pageNumbers = [];
   for (let i = 1; i <= totalPages; i++) {
     pageNumbers.push(i);

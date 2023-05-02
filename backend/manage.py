@@ -43,7 +43,6 @@ def get_todos():
     sortField = request.args.get('_sort', 'id')
     sortOrder = request.args.get('_order', 'asc')
     todos_query = Todo.query.order_by(db.text(f'{sortField} {sortOrder}')).paginate(page=page, per_page=limit, error_out=False)
-    print(todos_query)
     totalCount = todos_query.total
     todos = [todo.serialize() for todo in todos_query.items]
     response = jsonify(todos)

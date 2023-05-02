@@ -174,3 +174,44 @@ tr:nth-child(even) {
   padding: 8px;
   font-size: 16px;
 }
+
+.todo-details {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 20px;
+}
+
+.todo-details h3 {
+  font-size: 24px;
+  margin-bottom: 10px;
+}
+
+.todo-details p {
+  font-size: 18px;
+  margin: 5px 0;
+}
+
+.todo-details input[type='text'] {
+  margin: 10px 0;
+  padding: 5px;
+  width: 100%;
+  border-radius: 5px;
+  border: 1px solid #ddd;
+}
+
+.todo-details label {
+  margin-left: 10px;
+  font-size: 18px;
+}
+
+.todo-details button[type='submit'] {
+  margin: 20px auto;
+  padding: 10px 30px;
+  font-size: 24px;
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}

@@ -5,11 +5,14 @@ import {
   UPDATE_TODO,
   CREATE_TODO
 } from './types';
+import { API_URL } from '../config';
+
+axios.defaults.baseURL = API_URL;
 
 export const fetchTodos = (page = 1, sortField = 'id', sortOrder = 'asc') => async dispatch => {
   try {
     const res = await axios.get(`/api/todos?_page=${page}&_limit=3&_sort=${sortField}&_order=${sortOrder}`);
-    const totalCount = res.headers['x-total-count'] ? res.headers['x-total-count'] : 0;
+    const totalCount = await res.headers['x-total-count'];
     dispatch({
       type: FETCH_TODOS,
       payload: { data: res.data, page, totalCount }

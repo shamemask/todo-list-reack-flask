@@ -1,122 +1,26 @@
-file Dockerfile
-'''
-
-
-# Базовый образ
-FROM node:20
-
-# Создание директории приложения
-WORKDIR /app
-
-# Копирование файлов проекта в контейнер
-COPY . .
-
-# Установка зависимостей
-RUN npm install npm@9.6.5
-RUN npm install react-devtools@4.27.4
-RUN npm install
-
-# Открытие порта для доступа к приложению
-EXPOSE 3000
-
-# Настройка команды запуска приложения в контейнере
-
-CMD ["npm","start"]
-
-# Базовый образ
-FROM python:3.9
-
-# Установим зависимости
-RUN apt-get update -y && apt-get install -y postgresql postgresql-contrib libpq-dev nginx
-
-# Создаем директорию приложения и перемещаемся в нее 
-WORKDIR /app
-
-# Копируем файлы приложения в контейнер
-COPY . /app
-
-# Устанавливаем Python зависимости
-RUN python -m pip install --upgrade pip && pip install -r requirements.txt
-   
-# Запускаем PostgreSQL и создаем базу данных, пользователя и миграции
-RUN service postgresql start && sleep 5 && \
-    # su - postgres -c "psql -c 'CREATE DATABASE postgres'" && \
-    # su - postgres -c "psql -c 'CREATE USER postgres WITH PASSWORD '\''123'\'''" && \
-    # su - postgres -c "psql -c \"GRANT ALL PRIVILEGES ON DATABASE postgres TO postgres \"" && \
-    su - postgres -c "psql -c 'ALTER USER postgres WITH PASSWORD '\''123'\'''" && \
-    flask db init && \
-    flask db migrate && \
-    flask db upgrade
-
-
-# Открываем порт 5000 для Nginx
-EXPOSE 5000
-
-# Запускаем Nginx и Gunicorn
-CMD npm start && service postgresql start && service nginx start && gunicorn --bind 0.0.0.0:5000 wsgi:app
-
-'''
-
-file backend\Dockerfile
-'''
-# Базовый образ
-FROM python:3.9
-
-# Установим зависимости
-RUN apt-get update -y && apt-get install -y postgresql postgresql-contrib libpq-dev nginx
-
-# Создаем директорию приложения и перемещаемся в нее 
-WORKDIR /app
-
-# Копируем файлы приложения в контейнер
-COPY . /app
-
-# Устанавливаем Python зависимости
-RUN python -m pip install --upgrade pip && pip install -r requirements.txt
-   
-# Запускаем PostgreSQL и создаем базу данных, пользователя и миграции
-RUN service postgresql start && sleep 5 && \
-    # su - postgres -c "psql -c 'CREATE DATABASE postgres'" && \
-    # su - postgres -c "psql -c 'CREATE USER postgres WITH PASSWORD '\''123'\'''" && \
-    # su - postgres -c "psql -c \"GRANT ALL PRIVILEGES ON DATABASE postgres TO postgres \"" && \
-    su - postgres -c "psql -c 'ALTER USER postgres WITH PASSWORD '\''123'\'''" && \
-    flask db init && \
-    flask db migrate && \
-    flask db upgrade
-
-
-# Открываем порт 5000 для Nginx
-EXPOSE 5000
-
-# Запускаем Nginx и Gunicorn
-CMD service postgresql start && service nginx start && gunicorn --bind 0.0.0.0:5000 wsgi:app
-
-'''
-
 file backend\manage.py
 '''
-from flask import Flask
+from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_cors import CORS
 import eventlet
 eventlet.monkey_patch()
 
-from flask import  jsonify, request
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:123@localhost:5432/postgres'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy()
 db.init_app(app)
 migrate = Migrate(app, db)
-cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
+cors = CORS(app, resources={r"/api/*": {"origins": "*"}}, expose_headers='x-total-count')
 
 class Todo(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(120))
     email = db.Column(db.String(120))
     text = db.Column(db.String(120))
-    done = db.Column(db.Boolean)
+    done = db.Column(db.Boolean) 
 
     def __init__(self, name, email, text, done=False):
         self.name = name
@@ -136,9 +40,17 @@ class Todo(db.Model):
 # Получить все задачи
 @app.route('/api/todos')
 def get_todos():
-    todos = Todo.query.all()
-    todos = [todo.serialize() for todo in todos]
-    return jsonify(todos)
+    page = int(request.args.get('_page', 1))
+    limit = int(request.args.get('_limit', 3))
+    sortField = request.args.get('_sort', 'id')
+    sortOrder = request.args.get('_order', 'asc')
+    todos_query = Todo.query.order_by(db.text(f'{sortField} {sortOrder}')).paginate(page=page, per_page=limit, error_out=False)
+    totalCount = todos_query.total
+    todos = [todo.serialize() for todo in todos_query.items]
+    response = jsonify(todos)
+    response.headers.add('x-total-count', totalCount)
+    print(response.headers)
+    return response
 
 # Получить задачу по ID
 @app.route('/api/todos/<int:id>')
@@ -182,8 +94,8 @@ def delete_todo_by_id(id):
 
     return jsonify(todo.serialize())
 
-# if __name__ == '__main__':
-#     app.run(debug=True)
+if __name__ == '__main__':
+    app.run(debug=True)
 '''
 
 file backend\wsgi.py
@@ -195,41 +107,9 @@ if __name__ == '__main__':
     wsgi.server(listen(('0.0.0.0', 5000)), app)
 '''
 
-file frontend\Dockerfile
+file frontend\src\config.js
 '''
-# Базовый образ
-FROM node:20
-
-# Создание директории приложения
-WORKDIR /app
-
-# Копирование файлов проекта в контейнер
-COPY . .
-
-# Установка зависимостей
-RUN npm install npm@9.6.5
-RUN npm install react-devtools@4.27.4
-RUN npm install
-
-# Открытие порта для доступа к приложению
-EXPOSE 3000
-
-# Настройка команды запуска приложения в контейнере
-
-CMD ["npm","start"]
-'''
-
-file frontend\src\App.test.js
-'''
-import { render, screen } from '@testing-library/react';
-import App from './App';
-
-test('renders learn react link', () => {
-  render(<App />);
-  const linkElement = screen.getByText(/learn react/i);
-  expect(linkElement).toBeInTheDocument();
-});
-
+export const API_URL = 'http://localhost:5000';//'https://todo-shamemask.b4a.run';
 '''
 
 file frontend\src\index.js
@@ -248,52 +128,24 @@ ReactDOM.render(
     <App />
   </Provider>,
   document.getElementById('root')
-);
-'''
-
-file frontend\src\reportWebVitals.js
-'''
-const reportWebVitals = onPerfEntry => {
-  if (onPerfEntry && onPerfEntry instanceof Function) {
-    import('web-vitals').then(({ getCLS, getFID, getFCP, getLCP, getTTFB }) => {
-      getCLS(onPerfEntry);
-      getFID(onPerfEntry);
-      getFCP(onPerfEntry);
-      getLCP(onPerfEntry);
-      getTTFB(onPerfEntry);
-    });
-  }
-};
-
-export default reportWebVitals;
-
+); 
 '''
 
 file frontend\src\setupProxy.js
 '''
 const { createProxyMiddleware } = require('http-proxy-middleware');
-
+import { API_URL } from '../config';
 module.exports = function(app) {
   app.use(
     '/api',
     createProxyMiddleware({
-      // target: 'http://localhost:5000',
-      target: 'http://todo-shamemask.b4a.run',
+      target: API_URL,
       changeOrigin: true
     })
   );
-};
+}; 
 '''
 
-file frontend\src\setupTests.js
-'''
-// jest-dom adds custom jest matchers for asserting on DOM nodes.
-// allows you to do things like:
-// expect(element).toHaveTextContent(/react/i)
-// learn more: https://github.com/testing-library/jest-dom
-import '@testing-library/jest-dom';
-
-'''
 
 file frontend\src\actions\todosActions.js
 '''
@@ -304,6 +156,9 @@ import {
   UPDATE_TODO,
   CREATE_TODO
 } from './types';
+import { API_URL } from '../config';
+ 
+axios.defaults.baseURL = API_URL;
 
 export const fetchTodos = (page = 1, sortField = 'id', sortOrder = 'asc') => async dispatch => {
   try {
@@ -326,7 +181,7 @@ export const fetchTodoById = id => async dispatch => {
 };
 
 export const updateTodo = (id, text, done) => async dispatch => {
-  await axios.patch(`/api/todos/${id}`, { text, done });
+  await axios.put(`/api/todos/${id}`, { text, done });
   dispatch({
     type: UPDATE_TODO
   });
@@ -476,17 +331,18 @@ file frontend\src\components\TodoDetails.js
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchTodoById, updateTodo } from '../actions/todosActions';
-import AdminPanel from './AdminPanel';
 import AdminTodoForm from './AdminTodoForm';
+import { useHistory } from 'react-router-dom';
 
 const TodoDetails = ({ match }) => {
   const { id } = match.params;
   const dispatch = useDispatch();
   const todo = useSelector(state => state.todos.todo);
   const isAdmin = useSelector(state => state.todos.isAdmin);
-  const [text, setText] = useState(todo.text);
-  const [done, setDone] = useState(todo.done);
- 
+  const [text, setText] = useState(todo.text || "");
+  const [done, setDone] = useState(todo.done || false);
+  const history = useHistory();
+
   useEffect(() => {
     dispatch(fetchTodoById(id));
   }, [dispatch, id]);
@@ -499,10 +355,11 @@ const TodoDetails = ({ match }) => {
   const handleSubmit = e => {
     e.preventDefault();
     dispatch(updateTodo(todo.id, text, done));
+    history.push('/');
   };
 
   return (
-    <div>
+    <div className='container'>
       <h2>Task Details:</h2>
         <form onSubmit={handleSubmit} className="todo-details">
           <h3>{todo.name}</h3>
@@ -547,7 +404,7 @@ import React, { useState } from 'react';
 import { connect } from 'react-redux';
 import { createTodo } from '../actions/todosActions';
 
-const TodoForm = ({ createTodo }) => {
+const TodoForm = ({ createTodo, history }) => { // добавляем history в пропсы
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [text, setText] = useState('');
@@ -558,6 +415,7 @@ const TodoForm = ({ createTodo }) => {
     setName('');
     setEmail('');
     setText('');
+    history.push('/'); // переход на главную страницу
   };
 
   return (
@@ -590,8 +448,8 @@ import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchTodos } from '../actions/todosActions';
 import { Link } from 'react-router-dom';
-import TodoListItem from './TodoListItem';
 import AdminPanel from './AdminPanel';
+import AdminTodoForm from './AdminTodoForm';
 
 const TodoList = () => {
   const dispatch = useDispatch();
@@ -669,13 +527,19 @@ const TodoList = () => {
         </thead>
         <tbody>
           {currentTodos.map(todo => (
-            <TodoListItem key={todo.id} todo={todo} isAdmin={isAdmin} />
+            <tr key={todo.id}>
+              <td>{todo.name}</td>
+              <td>{todo.email}</td>
+              <td><Link to={`/todos/${todo.id}`}>{todo.text}</Link></td>
+              <td>{todo.done ? 'Done' : 'Not Done'}</td>
+              {isAdmin && (
+                <>
+                  <td className="edit-column"><Link to={`/todos/${todo.id}`}>Edit</Link></td>
+                  <AdminTodoForm class="admin-todo-form" todo={todo} />
+                </>
+              )}
+            </tr>
           ))}
-          {isAdmin && (
-              <td>
-                <Link to={`/todos/${todo.id}`}>Edit</Link>
-              </td>
-            )}
         </tbody>
       </table>
       <div className='paginate'>
@@ -694,7 +558,6 @@ file frontend\src\components\TodoListItem.js
 '''
 import React from 'react';
 import { Link } from 'react-router-dom';
-
 const TodoListItem = ({ todo }) => {
   const isAdmin = useSelector(state => state.todos.isAdmin);
 
@@ -750,7 +613,7 @@ const todosReducer = (state = initialState, action) => {
         ...state,
         todos: action.payload.data,
         currentPage: action.payload.page,
-        totalPages: Math.ceil(action.payload.headers['x-total-count'] / 3)
+        totalPages: Math.ceil(action.payload.totalPages / 3)
       };
     case FETCH_TODO_BY_ID:
       return {

@@ -22,7 +22,7 @@ const todosReducer = (state = initialState, action) => {
         ...state,
         todos: action.payload.data,
         currentPage: action.payload.page,
-        totalPages: Math.ceil(action.payload.headers['x-total-count'] / 3)
+        totalPages: Math.ceil(action.payload['totalCount'] / 3)
       };
     case FETCH_TODO_BY_ID:
       return {

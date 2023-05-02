@@ -1,15 +1,11 @@
 const { createProxyMiddleware } = require('http-proxy-middleware');
-
+import { API_URL } from '../config';
 module.exports = function(app) {
   app.use(
     '/api',
     createProxyMiddleware({
-      target: 'http://localhost:5000',
+      target: API_URL,
       changeOrigin: true
-    }),
-    // createProxyMiddleware({
-    //   target: 'https://todo-shamemask.b4a.run',
-    //   changeOrigin: true
-    // })
+    })
   );
 }; 

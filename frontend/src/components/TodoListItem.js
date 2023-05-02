@@ -1,6 +1,5 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-
 const TodoListItem = ({ todo }) => {
   const isAdmin = useSelector(state => state.todos.isAdmin);
 
