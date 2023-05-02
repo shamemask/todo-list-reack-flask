@@ -1,25 +1,24 @@
-from flask import Flask
+from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_cors import CORS
 import eventlet
 eventlet.monkey_patch()
 
-from flask import  jsonify, request
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:123@localhost:5432/postgres'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy()
 db.init_app(app)
 migrate = Migrate(app, db)
-cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
+cors = CORS(app, resources={r"/api/*": {"origins": "*"}}, expose_headers='x-total-count')
 
 class Todo(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(120))
     email = db.Column(db.String(120))
     text = db.Column(db.String(120))
-    done = db.Column(db.Boolean)
+    done = db.Column(db.Boolean) 
 
     def __init__(self, name, email, text, done=False):
         self.name = name
@@ -43,11 +42,12 @@ def get_todos():
     limit = int(request.args.get('_limit', 3))
     sortField = request.args.get('_sort', 'id')
     sortOrder = request.args.get('_order', 'asc')
-    todos_query = Todo.query.order_by(db.text(f'{sortField} {sortOrder}')).paginate(page, limit, False)
+    todos_query = Todo.query.order_by(db.text(f'{sortField} {sortOrder}')).paginate(page=page, per_page=limit, error_out=False)
+    print(todos_query)
     totalCount = todos_query.total
     todos = [todo.serialize() for todo in todos_query.items]
     response = jsonify(todos)
-    response.headers.add('X-Total-Count', totalCount)
+    response.headers.add('x-total-count', totalCount)
     return response
 
 # Получить задачу по ID
@@ -92,5 +92,5 @@ def delete_todo_by_id(id):
 
     return jsonify(todo.serialize())
 
-# if __name__ == '__main__':
-#     app.run(debug=True)
+if __name__ == '__main__':
+    app.run(debug=True)

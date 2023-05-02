@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { connect } from 'react-redux';
 import { createTodo } from '../actions/todosActions';
 
-const TodoForm = ({ createTodo }) => {
+const TodoForm = ({ createTodo, history }) => { // добавляем history в пропсы
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [text, setText] = useState('');
@@ -13,6 +13,7 @@ const TodoForm = ({ createTodo }) => {
     setName('');
     setEmail('');
     setText('');
+    history.push('/'); // переход на главную страницу
   };
 
   return (
