@@ -1,1 +1,1 @@
-export const API_URL = 'http://localhost:5000';//'https://todo-shamemask.b4a.run';
+export const API_URL = 'http://194.58.92.201:5000';
