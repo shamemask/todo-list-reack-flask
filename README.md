@@ -59,10 +59,10 @@ docker build -t todo-app-frontend .
 2. Когда Docker завершит сборку контейнера, выполните следующую команду:
 
 ```
-docker run --name frontend -p 3000:3000 -d todo-app-frontend
+docker run --name frontend -p 80:80 -d todo-app-frontend
 ```
 
-3. Откройте веб-браузер и перейдите по адресу `http://localhost:3000`. Ваше приложение React.js должно быть запущено в Docker контейнере.
+3. Откройте веб-браузер и перейдите по адресу `http://localhost`. Ваше приложение React.js должно быть запущено в Docker контейнере.
 
 ## Функционал приложения
 
