@@ -30,7 +30,7 @@ export const fetchTodoById = id => async dispatch => {
 };
 
 export const updateTodo = (id, text, done) => async dispatch => {
-  await axios.patch(`/api/todos/${id}`, { text, done });
+  await axios.put(`/api/todos/${id}`, { text, done });
   dispatch({
     type: UPDATE_TODO
   });
