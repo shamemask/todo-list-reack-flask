@@ -9,10 +9,12 @@ const TodoList = () => {
   const dispatch = useDispatch();
   const todos = useSelector(state => state.todos.todos);
   const [currentPage, setCurrentPage] = useState(1);
+  const totalPages = useSelector(state => state.todos.totalPages);
   const [nameSort, setNameSort] = useState(false);
   const [emailSort, setEmailSort] = useState(false);
   const [statusSort, setStatusSort] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [error, setError] = useState(null); 
 
   useEffect(() => {
     dispatch(fetchTodos(currentPage, nameSort ? 'name' : 'id', nameSort ? 'asc' : 'desc'));
@@ -20,7 +22,6 @@ const TodoList = () => {
 
   const currentTodos = todos
 
-  const totalPages = Math.ceil(todos.length);
   const pageNumbers = [];
   for (let i = 1; i <= totalPages; i++) {
     pageNumbers.push(i);
@@ -54,6 +55,9 @@ const TodoList = () => {
   const handleLogin = (username, password) => {
     if (username === 'admin' && password === '123') {
       setIsAdmin(true);
+      setError(null); 
+    } else {
+      setError('Invalid username or password'); 
     }
   };
 
@@ -64,7 +68,7 @@ const TodoList = () => {
   return (
     <div className='container'>
       <h2>Todo List</h2>
-      <AdminPanel class="admin-todo-form" onLogin={handleLogin} onLogout={handleLogout} isAdmin={isAdmin} />
+      <AdminPanel class="admin-todo-form" onLogin={handleLogin} onLogout={handleLogout} isAdmin={isAdmin} error={error} />
       <Link className="btn-primary" to="/create-todo">Create Todo</Link>
       <table>
         <thead>

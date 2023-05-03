@@ -15,7 +15,7 @@ export const fetchTodos = (page = 1, sortField = 'id', sortOrder = 'asc') => asy
     const totalCount = await res.headers['x-total-count'];
     dispatch({
       type: FETCH_TODOS,
-      payload: { data: res.data, page, totalCount }
+      payload: { data: res.data, page, totalCount:totalCount }
     });
   } catch (err) {
     console.log(err);
