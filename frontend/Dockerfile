@@ -1,5 +1,5 @@
 # Базовый образ
-FROM node:20
+FROM node:20 AS builder
 
 # Создание директории приложения
 WORKDIR /app

@@ -1,3 +1,98 @@
+file Dockerfile
+'''
+
+
+# Базовый образ
+FROM node:20
+
+# Создание директории приложения
+WORKDIR /app
+
+# Копирование файлов проекта в контейнер
+COPY . .
+
+# Установка зависимостей
+RUN npm install npm@9.6.5
+RUN npm install react-devtools@4.27.4
+RUN npm install
+
+# Открытие порта для доступа к приложению
+EXPOSE 3000
+
+# Настройка команды запуска приложения в контейнере
+
+CMD ["npm","start"]
+
+# Базовый образ
+FROM python:3.9
+
+# Установим зависимости
+RUN apt-get update -y && apt-get install -y postgresql postgresql-contrib libpq-dev nginx
+
+# Создаем директорию приложения и перемещаемся в нее 
+WORKDIR /app
+
+# Копируем файлы приложения в контейнер
+COPY . /app
+
+# Устанавливаем Python зависимости
+RUN python -m pip install --upgrade pip && pip install -r requirements.txt
+   
+# Запускаем PostgreSQL и создаем базу данных, пользователя и миграции
+RUN service postgresql start && sleep 5 && \
+    # su - postgres -c "psql -c 'CREATE DATABASE postgres'" && \
+    # su - postgres -c "psql -c 'CREATE USER postgres WITH PASSWORD '\''123'\'''" && \
+    # su - postgres -c "psql -c \"GRANT ALL PRIVILEGES ON DATABASE postgres TO postgres \"" && \
+    su - postgres -c "psql -c 'ALTER USER postgres WITH PASSWORD '\''123'\'''" && \
+    flask db init && \
+    flask db migrate && \
+    flask db upgrade
+
+
+# Открываем порт 5000 для Nginx
+EXPOSE 5000
+
+# Запускаем Nginx и Gunicorn
+CMD npm start && service postgresql start && service nginx start && gunicorn --bind 0.0.0.0:5000 wsgi:app
+
+'''
+
+file backend\Dockerfile
+'''
+# Базовый образ
+FROM python:3.9
+
+# Установим зависимости
+RUN apt-get update -y && apt-get install -y postgresql postgresql-contrib libpq-dev nginx
+
+# Создаем директорию приложения и перемещаемся в нее 
+WORKDIR /app
+
+# Копируем файлы приложения в контейнер
+COPY . /app
+
+# Устанавливаем Python зависимости
+RUN python -m pip install --upgrade pip && pip install -r requirements.txt
+   
+# Запускаем PostgreSQL и создаем базу данных, пользователя и миграции
+RUN service postgresql start && sleep 5 && \
+    # su - postgres -c "psql -c 'CREATE DATABASE postgres'" && \
+    # su - postgres -c "psql -c 'CREATE USER postgres WITH PASSWORD '\''123'\'''" && \
+    # su - postgres -c "psql -c \"GRANT ALL PRIVILEGES ON DATABASE postgres TO postgres \"" && \
+    su - postgres -c "psql -c 'ALTER USER postgres WITH PASSWORD '\''123'\'''" && \
+    flask db init && \
+    flask db migrate && \
+    flask db upgrade
+
+
+# Открываем порт 5000 для Nginx
+EXPOSE 5000
+
+# Запускаем Nginx и Gunicorn
+CMD service postgresql start && service nginx start && gunicorn --bind 0.0.0.0:5000 wsgi:app
+
+'''
+
 file backend\manage.py
 '''
 from flask import Flask, jsonify, request
@@ -49,7 +144,6 @@ def get_todos():
     todos = [todo.serialize() for todo in todos_query.items]
     response = jsonify(todos)
     response.headers.add('x-total-count', totalCount)
-    print(response.headers)
     return response
 
 # Получить задачу по ID
@@ -107,6 +201,43 @@ if __name__ == '__main__':
     wsgi.server(listen(('0.0.0.0', 5000)), app)
 '''
 
+file frontend\Dockerfile
+'''
+# Базовый образ
+FROM node:20
+
+# Создание директории приложения
+WORKDIR /app
+
+# Копирование файлов проекта в контейнер
+COPY . .
+
+# Установка зависимостей
+RUN npm install npm@9.6.5
+RUN npm install react-devtools@4.27.4
+RUN npm install
+
+# Открытие порта для доступа к приложению
+EXPOSE 3000
+
+# Настройка команды запуска приложения в контейнере
+
+CMD ["npm","start"]
+'''
+
+file frontend\src\App.test.js
+'''
+import { render, screen } from '@testing-library/react';
+import App from './App';
+
+test('renders learn react link', () => {
+  render(<App />);
+  const linkElement = screen.getByText(/learn react/i);
+  expect(linkElement).toBeInTheDocument();
+});
+
+'''
+
 file frontend\src\config.js
 '''
 export const API_URL = 'http://localhost:5000';//'https://todo-shamemask.b4a.run';
@@ -131,6 +262,24 @@ ReactDOM.render(
 ); 
 '''
 
+file frontend\src\reportWebVitals.js
+'''
+const reportWebVitals = onPerfEntry => {
+  if (onPerfEntry && onPerfEntry instanceof Function) {
+    import('web-vitals').then(({ getCLS, getFID, getFCP, getLCP, getTTFB }) => {
+      getCLS(onPerfEntry);
+      getFID(onPerfEntry);
+      getFCP(onPerfEntry);
+      getLCP(onPerfEntry);
+      getTTFB(onPerfEntry);
+    });
+  }
+};
+
+export default reportWebVitals;
+
+'''
+
 file frontend\src\setupProxy.js
 '''
 const { createProxyMiddleware } = require('http-proxy-middleware');
@@ -146,6 +295,15 @@ module.exports = function(app) {
 }; 
 '''
 
+file frontend\src\setupTests.js
+'''
+// jest-dom adds custom jest matchers for asserting on DOM nodes.
+// allows you to do things like:
+// expect(element).toHaveTextContent(/react/i)
+// learn more: https://github.com/testing-library/jest-dom
+import '@testing-library/jest-dom';
+
+'''
 
 file frontend\src\actions\todosActions.js
 '''
@@ -157,13 +315,13 @@ import {
   CREATE_TODO
 } from './types';
 import { API_URL } from '../config';
- 
+
 axios.defaults.baseURL = API_URL;
 
 export const fetchTodos = (page = 1, sortField = 'id', sortOrder = 'asc') => async dispatch => {
   try {
     const res = await axios.get(`/api/todos?_page=${page}&_limit=3&_sort=${sortField}&_order=${sortOrder}`);
-    const totalCount = res.headers['x-total-count'] ? res.headers['x-total-count'] : 0;
+    const totalCount = await res.headers['x-total-count'];
     dispatch({
       type: FETCH_TODOS,
       payload: { data: res.data, page, totalCount }
@@ -181,7 +339,7 @@ export const fetchTodoById = id => async dispatch => {
 };
 
 export const updateTodo = (id, text, done) => async dispatch => {
-  await axios.put(`/api/todos/${id}`, { text, done });
+  await axios.patch(`/api/todos/${id}`, { text, done });
   dispatch({
     type: UPDATE_TODO
   });
@@ -455,7 +613,6 @@ const TodoList = () => {
   const dispatch = useDispatch();
   const todos = useSelector(state => state.todos.todos);
   const [currentPage, setCurrentPage] = useState(1);
-  const [todosPerPage, setTodosPerPage] = useState(3);
   const [nameSort, setNameSort] = useState(false);
   const [emailSort, setEmailSort] = useState(false);
   const [statusSort, setStatusSort] = useState(false);
@@ -465,11 +622,9 @@ const TodoList = () => {
     dispatch(fetchTodos(currentPage, nameSort ? 'name' : 'id', nameSort ? 'asc' : 'desc'));
   }, [dispatch, currentPage, nameSort]);
 
-  const indexOfLastTodo = currentPage * todosPerPage;
-  const indexOfFirstTodo = indexOfLastTodo - todosPerPage;
-  const currentTodos = todos.slice(indexOfFirstTodo, indexOfLastTodo);
+  const currentTodos = todos
 
-  const totalPages = Math.ceil(todos.length / todosPerPage);
+  const totalPages = Math.ceil(todos.length);
   const pageNumbers = [];
   for (let i = 1; i <= totalPages; i++) {
     pageNumbers.push(i);
@@ -613,7 +768,7 @@ const todosReducer = (state = initialState, action) => {
         ...state,
         todos: action.payload.data,
         currentPage: action.payload.page,
-        totalPages: Math.ceil(action.payload.totalPages / 3)
+        totalPages: Math.ceil(action.payload['totalCount'] / 3)
       };
     case FETCH_TODO_BY_ID:
       return {
