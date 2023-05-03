@@ -24,7 +24,9 @@ const TodoDetails = ({ match }) => {
 
   const handleSubmit = e => {
     e.preventDefault();
+    if (isAdmin) {
     dispatch(updateTodo(todo.id, text, done));
+    }
     history.push('/');
   };
 
@@ -49,7 +51,9 @@ const TodoDetails = ({ match }) => {
               className="todo-checkbox"
             />
           </label>
-          <button type="submit" className="btn-primary">Save</button>
+          {isAdmin && (
+            <button type="submit" className="btn-primary">Save</button>
+          )}
         </form>
         {isAdmin ? (
             <AdminTodoForm class="admin-todo-form" todo={todo} />

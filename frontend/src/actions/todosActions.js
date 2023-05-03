@@ -29,8 +29,12 @@ export const fetchTodoById = id => async dispatch => {
   });
 };
 
-export const updateTodo = (id, text, done) => async dispatch => {
-  await axios.put(`/api/todos/${id}`, { text, done });
+export const updateTodo = (id, text, done) => async (dispatch, getState) => {
+  const isAdmin = getState().todos.isAdmin;
+  if (!isAdmin) {
+    throw new Error('Unauthorized');
+  }
+  await axios.patch(`/api/todos/${id}`, { text, done });
   dispatch({
     type: UPDATE_TODO
   });
